@@ -4,28 +4,34 @@ on:
   workflow_dispatch:
     inputs:
       yt_dlp_ref:
+        description: "yt-dlp version to build, in form YYYY.MM.DD"
         required: true
         type: string
       allow_update:
-        description: "allow --update to work"
+        description: "Allow --update to work"
         default: true
         type: boolean
       python_ver:
+        description: "Python version to use from 3dyd/cpython"
         required: true
         default: 3.12.11
         type: string
       pyi_rebuild:
+        description: "Rebuild PyInstaller"
         default: true
         type: boolean
       pyi_build_owner:
+        description: "PyInstaller build repository owner"
         required: true
         default: 3dyd
         type: string
       pyi_build_repo:
+        description: "PyInstaller build repository name"
         required: true
         default: pyinstaller-builds
         type: string
       pyi_ver:
+        description: "PyInstaller version to build"
         required: true
         default: 6.15.0
         type: string
@@ -89,7 +95,7 @@ jobs:
           PYI_BUILD_REPO: ${{ inputs.pyi_build_repo }}
           PYI_VER: ${{ inputs.pyi_ver }}
 
-      - name: Build EXE
+      - name: Build Files
         run: |
           set -xeu
           source venv/Scripts/activate
@@ -110,10 +116,12 @@ jobs:
           fi
 
           python -m bundle.pyinstaller
+
+          (cd dist && sha256sum yt-dlp_x86.exe > SHA2-256SUMS)
         env:
           ALLOW_UPDATE: ${{ inputs.allow_update }}
 
-      - name: Release EXE
+      - name: Release Files
         run: |
           set -xeu
           if gh --repo "$GITHUB_REPOSITORY" release view "$YT_DLP_REF" &> /dev/null; then
