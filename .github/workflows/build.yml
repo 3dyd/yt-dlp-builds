@@ -108,4 +108,5 @@ jobs:
           NOTES="Read changelog on the official release page: https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF"
           gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/yt-dlp_x86.exe
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
