@@ -22,36 +22,32 @@ on:
         required: false
         default: pyinstaller-builds
         type: string
-      pyi_ref:
+      pyi_ver:
         required: false
-        default: v6.15.0
+        default: 6.15.0
         type: string
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 jobs:
   prepare:
     name: build pyinstaller
-    if: inputs.pyi_rebuild
     runs-on: ubuntu-latest
 
     steps:
       - name: Rebuild custom PyInstaller
+        if: inputs.pyi_rebuild
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: ${{ inputs.pyi_build_owner }}
           repo: ${{ inputs.pyi_build_repo }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAT }}
           workflow_file_name: build-package.yml
           ref: master
           wait_workflow: true
-          client_payload: '{"ref":"${{ inputs.pyi_ref }}"}'
+          client_payload: '{"ref":"v${{ inputs.pyi_ver }}"}'
 
   build:
     name: build
+    needs: prepare
     runs-on: windows-latest
     defaults:
       run:
@@ -78,11 +74,11 @@ jobs:
           set -xeu
           source venv/Scripts/activate
           python devscripts/install_deps.py -o --include build
-          python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/pyinstaller-${PYI_REF}-py3-none-any.whl
+          python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/pyinstaller-${PYI_VER}-py3-none-any.whl
         env:
           PYI_BUILD_OWNER: ${{ inputs.pyi_build_owner }}
           PYI_BUILD_REPO: ${{ inputs.pyi_build_repo }}
-          PYI_REF: ${{ inputs.pyi_ref }}
+          PYI_VER: ${{ inputs.pyi_ver }}
 
       - name: Build EXE
         run: |
@@ -105,4 +101,5 @@ jobs:
           NOTES="Read changelog on the official release page: https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF"
           gh release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" dist/yt-dlp_x86.exe
         env:
+          GH_TOKEN: ${{ secrets.PAT }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
