@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       yt_dlp_ref:
-        description: "yt-dlp version to build, in form YYYY.MM.DD"
+        description: "yt-dlp version to build (YYYY.MM.DD)"
         required: true
         type: string
       allow_update:
