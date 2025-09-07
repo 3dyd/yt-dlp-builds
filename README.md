@@ -4,6 +4,8 @@ This repository automatically builds `yt-dlp_x86.exe` (32-bit, so it works on bo
 
 To do that it uses Vista-compatible Python ([3dyd/cpython#v3.12.11-vista](https://github.com/3dyd/cpython/releases/tag/v3.12.11-vista)) and PyInstaller ([3dyd/pyinstaller-builds](https://github.com/3dyd/pyinstaller-builds)).
 
+Releases in this repository are built from the same tags as [official releases](https://github.com/yt-dlp/yt-dlp/releases/).
+
 ## How to Build
 
 To make your own build, fork this repository and go to `Actions` → `build` → `Run workflow`.
