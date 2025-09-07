@@ -27,6 +27,11 @@ on:
         default: 6.15.0
         type: string
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   prepare:
     name: build pyinstaller
@@ -61,13 +66,9 @@ jobs:
           path: yt-dlp
           ref: ${{ inputs.yt_dlp_ref }}
 
-      - name: Show Environment
-        run: env
-
       - name: Setup Python
         run: |
           set -xeu
-          env
           curl -L https://github.com/3dyd/cpython/releases/download/v${PYTHON_VER}-vista/python-${PYTHON_VER}-pip+venv-win32-VISTA.zip -o python.zip
           unzip -q python.zip -d python
           python/python.exe -m venv venv
@@ -100,12 +101,11 @@ jobs:
       - name: Release EXE
         run: |
           set -xeu
-          if gh release view "$YT_DLP_REF" &> /dev/null; then
-            gh release delete --cleanup-tag --yes "$YT_DLP_REF"
+          if gh --repo "$GITHUB_REPOSITORY" release view "$YT_DLP_REF" &> /dev/null; then
+            gh --repo "$GITHUB_REPOSITORY" release delete --cleanup-tag --yes "$YT_DLP_REF"
             sleep 10
           fi
           NOTES="Read changelog on the official release page: https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF"
-          gh release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/yt-dlp_x86.exe
+          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/yt-dlp_x86.exe
         env:
-          GH_TOKEN: ${{ secrets.PAT }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
