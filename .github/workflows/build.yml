@@ -33,16 +33,13 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    name: build
-    runs-on: windows-2025
-    defaults:
-      run:
-        shell: bash
+  prepare:
+    name: build pyinstaller
+    if: inputs.pyi_rebuild
+    runs-on: ubuntu-latest
 
     steps:
       - name: Rebuild custom PyInstaller
-        if: inputs.pyi_rebuild
         uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: ${{ inputs.pyi_build_owner }}
@@ -53,6 +50,14 @@ jobs:
           wait_workflow: true
           client_payload: '{"ref":"${{ inputs.pyi_ref }}"}'
 
+  build:
+    name: build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
       - name: Checkout yt-dlp
         uses: actions/checkout@v4
         with:
