@@ -16,7 +16,7 @@ on:
         type: boolean
       pyi_build_owner:
         required: false
-        default: ${{ github.repository_owner }}
+        default: 3dyd
         type: string
       pyi_build_repo:
         required: false
