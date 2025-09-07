@@ -6,12 +6,15 @@ on:
       yt_dlp_ref:
         required: true
         type: string
+      allow_update:
+        description: "allow --update to work"
+        default: true
+        type: boolean
       python_ver:
         required: true
         default: 3.12.11
         type: string
       pyi_rebuild:
-        required: false
         default: true
         type: boolean
       pyi_build_owner:
@@ -89,14 +92,27 @@ jobs:
       - name: Build EXE
         run: |
           set -xeu
+          env
           source venv/Scripts/activate
           cd yt-dlp
           python devscripts/make_lazy_extractors.py
 
-          # Disallow --update otherwise it will be replaced with the official Win8+ binary
-          sed -ri "s/VARIANT.+/VARIANT = 'other'/" yt_dlp/version.py
+          if [[ "$ALLOW_UPDATE" == "true" ]]; then
+            sed -ri "s,ORIGIN.+,ORIGIN = '$GITHUB_REPOSITORY'," yt_dlp/version.py
+
+            grep -Fqx "    'stable': 'yt-dlp/yt-dlp'," yt_dlp/update.py  # ensure it has this line
+            sed -r "s|^    'stable': 'yt-dlp/yt-dlp',$|    'stable': '$GITHUB_REPOSITORY',|" yt_dlp/update.py
+
+            mkdir yt-dlp/dist
+            echo "# This file is used for regulating self-update" > yt-dlp/dist/_update_spec
+
+          else
+            sed -ri "s/VARIANT.+/VARIANT = 'other'/" yt_dlp/version.py
+          fi
 
           python -m bundle.pyinstaller
+        env:
+          ALLOW_UPDATE: ${{ inputs.allow_update }}
 
       - name: Release EXE
         run: |
@@ -106,7 +122,7 @@ jobs:
             sleep 10
           fi
           NOTES="Read changelog on the official release page: https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF"
-          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/yt-dlp_x86.exe
+          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
