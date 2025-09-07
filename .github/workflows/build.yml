@@ -92,7 +92,6 @@ jobs:
       - name: Build EXE
         run: |
           set -xeu
-          env
           source venv/Scripts/activate
           cd yt-dlp
           python devscripts/make_lazy_extractors.py
@@ -101,10 +100,10 @@ jobs:
             sed -ri "s,ORIGIN.+,ORIGIN = '$GITHUB_REPOSITORY'," yt_dlp/version.py
 
             grep -Fqx "    'stable': 'yt-dlp/yt-dlp'," yt_dlp/update.py  # ensure it has this line
-            sed -r "s|^    'stable': 'yt-dlp/yt-dlp',$|    'stable': '$GITHUB_REPOSITORY',|" yt_dlp/update.py
+            sed -i "s|^    'stable': 'yt-dlp/yt-dlp',$|    'stable': '$GITHUB_REPOSITORY',|" yt_dlp/update.py
 
-            mkdir yt-dlp/dist
-            echo "# This file is used for regulating self-update" > yt-dlp/dist/_update_spec
+            mkdir dist
+            echo "# This file is used for regulating self-update" > dist/_update_spec
 
           else
             sed -ri "s/VARIANT.+/VARIANT = 'other'/" yt_dlp/version.py
