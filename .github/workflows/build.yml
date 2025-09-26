@@ -112,7 +112,7 @@ jobs:
             echo "# This file is used for regulating self-update" > dist/_update_spec
 
           else
-            sed -ri "s/VARIANT.+/VARIANT = 'other'/" yt_dlp/version.py
+            python devscripts/set-variant.py other
           fi
 
           python -m bundle.pyinstaller
