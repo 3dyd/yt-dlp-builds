@@ -13,7 +13,6 @@ on:
         type: boolean
       python_ver:
         description: "Python version to use from 3dyd/cpython"
-        required: true
         default: 3.12.11
         type: string
       pyi_rebuild:
@@ -22,18 +21,15 @@ on:
         type: boolean
       pyi_build_owner:
         description: "PyInstaller build repository owner"
-        required: true
         default: 3dyd
         type: string
       pyi_build_repo:
         description: "PyInstaller build repository name"
-        required: true
         default: pyinstaller-builds
         type: string
       pyi_ver:
         description: "PyInstaller version to build"
-        required: true
-        default: 6.15.0
+        default: 6.16.0
         type: string
 
 permissions:
@@ -57,7 +53,7 @@ jobs:
           workflow_file_name: build-package.yml
           ref: master
           wait_workflow: true
-          client_payload: '{"ref":"v${{ inputs.pyi_ver }}"}'
+          client_payload: '{"version":"${{ inputs.pyi_ver }}"}'
 
   build:
     name: build
@@ -89,7 +85,7 @@ jobs:
           set -xeu
           source venv/Scripts/activate
           python yt-dlp/devscripts/install_deps.py --include build
-          python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/pyinstaller-${PYI_VER}-py3-none-any.whl
+          python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/vista/pyinstaller-${PYI_VER}-py3-none-any.whl
         env:
           PYI_BUILD_OWNER: ${{ inputs.pyi_build_owner }}
           PYI_BUILD_REPO: ${{ inputs.pyi_build_repo }}
