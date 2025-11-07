@@ -2,7 +2,7 @@ name: build
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &workflow_inputs
       yt_dlp_ref:
         description: "yt-dlp ref to checkout: tag YYYY.MM.DD for stable channel or hash for other channels"
         required: true
@@ -43,6 +43,9 @@ on:
         description: "PyInstaller version to build"
         default: 6.16.0
         type: string
+
+  workflow_call:
+    inputs: *workflow_inputs
 
 permissions:
   contents: write
