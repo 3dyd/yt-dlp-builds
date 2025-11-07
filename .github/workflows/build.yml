@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       yt_dlp_ref:
-        description: "yt-dlp hash or tag (YYYY.MM.DD) to checkout"
+        description: "yt-dlp ref to checkout: tag YYYY.MM.DD for stable channel or hash for other channels"
         required: true
         type: string
       yt_dlp_version:
@@ -80,14 +80,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yt-dlp/yt-dlp
-          path: yt-dlp
           ref: ${{ inputs.yt_dlp_ref }}
 
       # Verify that expected version (inputs.yt_dlp_version) matches the actual version checked out
       - name: Verify yt-dlp Version
         run: |
+          set -xeu
           [[ "$CURRENT_CHANNEL" != "stable" || "$YT_DLP_REF" == "$YT_DLP_VERSION" ]]
-          cd yt-dlp
           version_from_git="$(git show -s --format=%cd --date=format:%Y.%m.%d)"
           [[ "$version_from_git" == "$YT_DLP_VERSION" ]]
         env:
@@ -98,17 +97,17 @@ jobs:
       - name: Setup Python
         run: |
           set -xeu
-          curl -L https://github.com/3dyd/cpython/releases/download/v${PYTHON_VER}-vista/python-${PYTHON_VER}-pip+venv-win32-VISTA.zip -o python.zip
-          unzip -q python.zip -d python
-          python/python.exe -m venv venv
+          curl -L https://github.com/3dyd/cpython/releases/download/v${PYTHON_VER}-vista/python-${PYTHON_VER}-pip+venv-win32-VISTA.zip -o .python.zip
+          unzip -q .python.zip -d .python
+          .python/python.exe -m venv .venv
         env:
           PYTHON_VER: ${{ inputs.python_ver }}
 
       - name: Install Dependencies
         run: |
           set -xeu
-          source venv/Scripts/activate
-          python yt-dlp/devscripts/install_deps.py --include build
+          source .venv/Scripts/activate
+          python devscripts/install_deps.py --include build
           python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/vista/pyinstaller-${PYI_VER}-py3-none-any.whl
         env:
           PYI_BUILD_OWNER: ${{ inputs.pyi_build_owner }}
@@ -118,7 +117,6 @@ jobs:
       - name: Modify update.py
         run: |
           set -xeu
-          cd yt-dlp
 
           replace_line() {
             # Replace line but ensure first it exists
@@ -138,7 +136,7 @@ jobs:
           python -c "{$new_spec}['stable']"  # verify it has 'stable' channel
           replace_line "UPDATE_SOURCES = {" "UPDATE_SOURCES = { $new_spec"
 
-          head -50 yt_dlp/update.py
+          grep -A3 ^UPDATE_SOURCES yt_dlp/update.py
         env:
           CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
           OTHER_CHANNELS_SPEC: ${{ inputs.other_update_channels_spec }}
@@ -146,8 +144,7 @@ jobs:
       - name: Build Files
         run: |
           set -xeu
-          source venv/Scripts/activate
-          cd yt-dlp
+          source .venv/Scripts/activate
 
           python devscripts/make_lazy_extractors.py
           python devscripts/update-version.py -c "$CURRENT_CHANNEL" -r "$GITHUB_REPOSITORY" "$YT_DLP_VERSION"
@@ -181,7 +178,7 @@ jobs:
             title="yt-dlp $CURRENT_CHANNEL $YT_DLP_VERSION"
             notes="Generated from: [yt-dlp/yt-dlp@\`${YT_DLP_REF:0:8}\`](https://github.com/yt-dlp/yt-dlp/commit/$YT_DLP_REF)"
           fi
-          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_VERSION" --target master --title "$title" --notes "$notes" yt-dlp/dist/*
+          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_VERSION" --target master --title "$title" --notes "$notes" dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
