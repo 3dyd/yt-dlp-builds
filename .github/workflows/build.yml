@@ -4,8 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       yt_dlp_ref:
-        description: "yt-dlp version to build (YYYY.MM.DD)"
+        description: "yt-dlp hash or tag (YYYY.MM.DD) to checkout"
         required: true
+        type: string
+      yt_dlp_version:
+        description: "yt-dlp version (YYYY.MM.DD)"
+        required: true
+        type: string
+      current_update_channel:
+        description: "Current yt-dlp update channel"
+        default: stable
+        type: string
+      other_update_channels_spec:
+        description: "Other update channels in form: ['<channel>':'<owner>/<repo>',...]"
+        default: "'nightly': '3dyd/yt-dlp-nightly-builds'"
         type: string
       allow_update:
         description: "Allow --update to work"
@@ -71,6 +83,18 @@ jobs:
           path: yt-dlp
           ref: ${{ inputs.yt_dlp_ref }}
 
+      # Verify that expected version (inputs.yt_dlp_version) matches the actual version checked out
+      - name: Verify yt-dlp Version
+        run: |
+          [[ "$CURRENT_CHANNEL" != "stable" || "$YT_DLP_REF" == "$YT_DLP_VERSION" ]]
+          cd yt-dlp
+          version_from_git="$(git show -s --format=%cd --date=format:%Y.%m.%d)"
+          [[ "$version_from_git" == "$YT_DLP_VERSION" ]]
+        env:
+          CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
+          YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
+          YT_DLP_VERSION: ${{ inputs.yt_dlp_version }}
+
       - name: Setup Python
         run: |
           set -xeu
@@ -91,22 +115,46 @@ jobs:
           PYI_BUILD_REPO: ${{ inputs.pyi_build_repo }}
           PYI_VER: ${{ inputs.pyi_ver }}
 
+      - name: Modify update.py
+        run: |
+          set -xeu
+          cd yt-dlp
+
+          replace_line() {
+            # Replace line but ensure first it exists
+            grep -Fqx "$1" yt_dlp/update.py && sed -i "s|^$1\$|$2|" yt_dlp/update.py 
+          }
+
+          orig_channels=(
+            "    'stable': 'yt-dlp/yt-dlp',"
+            "    'nightly': 'yt-dlp/yt-dlp-nightly-builds',"
+            "    'master': 'yt-dlp/yt-dlp-master-builds',"
+          )
+          for c in "${orig_channels[@]}"; do
+            replace_line "$c" ""
+          done
+
+          new_spec="'$CURRENT_CHANNEL': '$GITHUB_REPOSITORY', $OTHER_CHANNELS_SPEC"
+          python -c "{$new_spec}['stable']"  # verify it has 'stable' channel
+          replace_line "UPDATE_SOURCES = {" "UPDATE_SOURCES = { $new_spec"
+
+          head -50 yt_dlp/update.py
+        env:
+          CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
+          OTHER_CHANNELS_SPEC: ${{ inputs.other_update_channels_spec }}
+
       - name: Build Files
         run: |
           set -xeu
           source venv/Scripts/activate
           cd yt-dlp
+
           python devscripts/make_lazy_extractors.py
+          python devscripts/update-version.py -c "$CURRENT_CHANNEL" -r "$GITHUB_REPOSITORY" "$YT_DLP_VERSION"
 
           if [[ "$ALLOW_UPDATE" == "true" ]]; then
-            sed -ri "s,ORIGIN.+,ORIGIN = '$GITHUB_REPOSITORY'," yt_dlp/version.py
-
-            grep -Fqx "    'stable': 'yt-dlp/yt-dlp'," yt_dlp/update.py  # ensure it has this line
-            sed -i "s|^    'stable': 'yt-dlp/yt-dlp',$|    'stable': '$GITHUB_REPOSITORY',|" yt_dlp/update.py
-
             mkdir dist
             echo "# This file is used for regulating self-update" > dist/_update_spec
-
           else
             python devscripts/set-variant.py other
           fi
@@ -116,16 +164,26 @@ jobs:
           (cd dist && sha256sum yt-dlp_x86.exe > SHA2-256SUMS)
         env:
           ALLOW_UPDATE: ${{ inputs.allow_update }}
+          CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
+          YT_DLP_VERSION: ${{ inputs.yt_dlp_version }}
 
       - name: Release Files
         run: |
           set -xeu
-          if gh --repo "$GITHUB_REPOSITORY" release view "$YT_DLP_REF" &> /dev/null; then
-            gh --repo "$GITHUB_REPOSITORY" release delete --cleanup-tag --yes "$YT_DLP_REF"
+          if gh --repo "$GITHUB_REPOSITORY" release view "$YT_DLP_VERSION" &> /dev/null; then
+            gh --repo "$GITHUB_REPOSITORY" release delete --cleanup-tag --yes "$YT_DLP_VERSION"
             sleep 10
           fi
-          NOTES="Read changelog on the official release page: https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF"
-          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_REF" --target master --title "yt-dlp $YT_DLP_REF" --notes "$NOTES" yt-dlp/dist/*
+          if [[ "$CURRENT_CHANNEL" == "stable" ]]; then
+            title="yt-dlp $YT_DLP_VERSION"
+            notes="Read changelog on the official release page: [yt-dlp/yt-dlp@\`$YT_DLP_REF\`](https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP_REF)"
+          else
+            title="yt-dlp $CURRENT_CHANNEL $YT_DLP_VERSION"
+            notes="Generated from: [yt-dlp/yt-dlp@\`${YT_DLP_REF:0:8}\`](https://github.com/yt-dlp/yt-dlp/commit/$YT_DLP_REF)"
+          fi
+          gh --repo "$GITHUB_REPOSITORY" release create "$YT_DLP_VERSION" --target master --title "$title" --notes "$notes" yt-dlp/dist/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
+          YT_DLP_VERSION: ${{ inputs.yt_dlp_version }}
