@@ -111,7 +111,7 @@ jobs:
             python devscripts/set-variant.py other
           fi
 
-          python -m bundle.pyinstaller
+          python -m bundle.pyinstaller --add-binary "c:/Program Files (x86)/Windows Kits/10/Redist/ucrt/DLLs/x86/api-ms-win-*.dll;."
 
           (cd dist && sha256sum yt-dlp_x86.exe > SHA2-256SUMS)
         env:
