@@ -90,7 +90,7 @@ jobs:
         run: |
           set -xeu
           [[ "$CURRENT_CHANNEL" != "stable" || "$YT_DLP_REF" == "$YT_DLP_VERSION" ]]
-          version_from_git="$(git show -s --format=%cd --date=format:%Y.%m.%d)"
+          version_from_git="$(TZ=UTC git show -s --format=%cd --date=format-local:%Y.%m.%d)"
           [[ "$version_from_git" == "$YT_DLP_VERSION" ]]
         env:
           CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
