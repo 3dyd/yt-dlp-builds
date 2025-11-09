@@ -85,13 +85,16 @@ jobs:
           repository: yt-dlp/yt-dlp
           ref: ${{ inputs.yt_dlp_ref }}
 
-      # Verify that expected version (inputs.yt_dlp_version) matches the actual version checked out
       - name: Verify yt-dlp Version
         run: |
           set -xeu
+
+          # Verify that inputs.yt_dlp_ref is version for stable channel and git hash otherwise
           [[ "$CURRENT_CHANNEL" != "stable" || "$YT_DLP_REF" == "$YT_DLP_VERSION" ]]
-          version_from_git="$(TZ=UTC git show -s --format=%cd --date=format-local:%Y.%m.%d)"
-          [[ "$version_from_git" == "$YT_DLP_VERSION" ]]
+          [[ "$CURRENT_CHANNEL" == "stable" || "$YT_DLP_REF" == "$(git log -1 --format=%H)" ]]
+
+          # Verify that expected version (inputs.yt_dlp_version) matches the actual version checked out
+          [[ "$YT_DLP_VERSION" == "$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y.%m.%d)" ]]
         env:
           CURRENT_CHANNEL: ${{ inputs.current_update_channel }}
           YT_DLP_REF: ${{ inputs.yt_dlp_ref }}
