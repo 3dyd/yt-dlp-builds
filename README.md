@@ -12,12 +12,12 @@ Releases in this repository are built from the same tags as [official releases](
 
 Read the [UPDATE topic](https://github.com/yt-dlp/yt-dlp/?tab=readme-ov-file#update) in the official yt-dlp documentation for the background.
 
-In these custom yt-dlp binaries `stable` channel is set to track this repository, so `--update` command works and uses binaries from this repository.
+These custom yt-dlp binaries have `stable` channel (tracks this repository) and `nightly` channel (tracks [3dyd/yt-dlp-nightly-builds](https://github.com/3dyd/yt-dlp-nightly-builds)). So `--update` and `--update-to stable|nightly` commands work and update to these custom binaries.
 
-Updates to `nightly` and `master` channels will use official yt-dlp repositories. If you accidentally switched to these channels you can switch back using `--update-to 3dyd/yt-dlp-builds` command.
+If you want to switch from different repository, `--update-to` accepts also repository name. Example: `--update-to 3dyd/yt-dlp-builds`.
 
 ## How to Build
 
 To make your own build, fork this repository and go to `Actions` → `build` → `Run workflow`.
 
-Specify [yt-dlp tag](https://github.com/yt-dlp/yt-dlp/tags) in `yt_dlp_ref` parameter and either uncheck `pyi_rebuild` or also fork [3dyd/pyinstaller-builds](https://github.com/3dyd/pyinstaller-builds) and specify your username in `pyi_owner_name`. In the latter case you would also need to setup PAT in your `yt-dlp-builds` fork so it can trigger workflow in `pyinstaller-builds` fork.
+Specify required inputs and either uncheck `Rebuild PyInstaller` or also fork [3dyd/pyinstaller-builds](https://github.com/3dyd/pyinstaller-builds) and specify forked repository in corresponding inputs. In the latter case you would also need to set up PAT in your `yt-dlp-builds` fork so it can trigger workflow in `pyinstaller-builds` fork.
