@@ -114,7 +114,7 @@ jobs:
           set -xeu
           source .venv/Scripts/activate
           python devscripts/install_deps.py --include build
-          python -m pip install https://${PYI_BUILD_OWNER}.github.io/${PYI_BUILD_REPO}/vista/pyinstaller-${PYI_VER}-py3-none-any.whl
+          python -m pip install https://github.com/${PYI_BUILD_OWNER}/${PYI_BUILD_REPO}/releases/download/latest/pyinstaller-${PYI_VER}+vista-py3-none-any.whl
         env:
           PYI_BUILD_OWNER: ${{ inputs.pyi_build_owner }}
           PYI_BUILD_REPO: ${{ inputs.pyi_build_repo }}
