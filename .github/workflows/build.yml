@@ -41,7 +41,7 @@ on:
         type: string
       pyi_ver:
         description: "PyInstaller version to build"
-        default: 6.16.0
+        default: 6.17.0
         type: string
 
   workflow_call:
